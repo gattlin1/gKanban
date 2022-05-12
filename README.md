@@ -1,3 +1,3 @@
-# Fullstack App
+# Fullstack Kanban Board
 
-31:01
+A fullstack web app of kanban boards.
