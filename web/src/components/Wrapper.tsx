@@ -3,9 +3,10 @@ import React from 'react';
 
 interface WrapperProps {
   variant: 'small' | 'regular';
+  children: JSX.Element;
 }
 
-function Wrapper({ children, variant = 'regular' }) {
+function Wrapper({ children, variant = 'regular' }: WrapperProps) {
   return (
     <Box
       mt={8}

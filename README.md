@@ -2,4 +2,4 @@
 
 A fullstack web app of kanban boards.
 
-1:56:38
+2:22:50
