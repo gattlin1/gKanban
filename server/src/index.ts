@@ -31,8 +31,8 @@ async function main() {
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365 * 10, //10 years
         httpOnly: true,
-        secure: __prod__,
         sameSite: 'lax',
+        secure: __prod__,
       },
       saveUninitialized: false,
       secret: 'adfasldkfjaasdf',

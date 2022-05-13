@@ -37,6 +37,15 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Query(() => User, { nullable: true })
+  async me(@Ctx() { em, req }: MyContext) {
+    // you're not logged in
+    if (!req.session.userId) return null;
+
+    const user = await em.findOne(User, { id: req.session.userId });
+    return user;
+  }
+
   @Query(() => [User])
   async users(@Ctx() { em }: MyContext): Promise<User[]> {
     return em.find(User, {});
@@ -45,7 +54,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async register(
     @Arg('credentials') credentials: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     if (credentials.username.length <= 2) {
       return {
@@ -75,6 +84,10 @@ export class UserResolver {
         return { errors: [{ message: 'username already exists' }] };
       }
     }
+
+    // automatically login user
+    req.session.userId = user.id;
+
     return { user };
   }
 
