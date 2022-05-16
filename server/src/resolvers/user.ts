@@ -11,6 +11,7 @@ import {
 } from 'type-graphql';
 import { MyContext } from 'src/types';
 import argon2 from 'argon2';
+import { EntityManager } from '@mikro-orm/postgresql';
 
 @InputType()
 class UsernamePasswordInput {
@@ -22,6 +23,8 @@ class UsernamePasswordInput {
 
 @ObjectType()
 class FieldError {
+  @Field()
+  field: string;
   @Field()
   message: string;
 }
@@ -59,7 +62,10 @@ export class UserResolver {
     if (credentials.username.length <= 2) {
       return {
         errors: [
-          { message: 'username length must be greater than 2 characters' },
+          {
+            field: 'username',
+            message: 'username length must be greater than 2 characters',
+          },
         ],
       };
     }
@@ -67,7 +73,10 @@ export class UserResolver {
     if (credentials.password.length <= 3) {
       return {
         errors: [
-          { message: 'password length must be greater than 3 characters' },
+          {
+            field: 'password',
+            message: 'password length must be greater than 3 characters',
+          },
         ],
       };
     }
@@ -80,8 +89,10 @@ export class UserResolver {
     try {
       await em.persistAndFlush(user);
     } catch (err) {
-      if (err.code === '23505') {
-        return { errors: [{ message: 'username already exists' }] };
+      if (err.detail.includes('already exists')) {
+        return {
+          errors: [{ field: 'username', message: 'username already exists' }],
+        };
       }
     }
 
@@ -101,7 +112,7 @@ export class UserResolver {
     });
 
     const credentialsErrorMsg = [
-      { message: 'username or password are incorrect' },
+      { field: 'username', message: 'username or password is incorrect' },
     ];
     if (!user) {
       return {
