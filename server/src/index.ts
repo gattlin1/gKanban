@@ -12,8 +12,16 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { MyContext } from './types';
 import cors from 'cors';
+import { sendEmail } from './utils/sendEmail';
+import { User } from './entities/User';
 
 async function main() {
+  // sendEmail(
+  //   'Gattlin Walker <gattlin28@gmail.com>',
+  //   'gattlin28@gmail.com',
+  //   'Change your pw',
+  //   'Click here to change your password'
+  // );
   const orm = await MikroORM.init(mikroOrmConfig);
   await orm.getMigrator().up();
 

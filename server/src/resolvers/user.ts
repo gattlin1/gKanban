@@ -3,7 +3,6 @@ import {
   Arg,
   Ctx,
   Field,
-  InputType,
   Mutation,
   ObjectType,
   Query,
@@ -12,14 +11,8 @@ import {
 import { MyContext } from '../types';
 import argon2 from 'argon2';
 import { COOKIE_NAME } from '../constants';
-
-@InputType()
-class UsernamePasswordInput {
-  @Field()
-  username: string;
-  @Field()
-  password: string;
-}
+import { UsernamePasswordInput } from './UsernamePasswordInput';
+import { validateRegister } from '../utils/validateRegister';
 
 @ObjectType()
 class FieldError {
@@ -40,6 +33,14 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg('email') email: string,
+    @Ctx() { em, req }: MyContext
+  ) {
+    const user = await em.findOne(User, { email });
+  }
+
   @Query(() => User, { nullable: true })
   async me(@Ctx() { em, req }: MyContext) {
     // you're not logged in
@@ -59,33 +60,16 @@ export class UserResolver {
     @Arg('credentials') credentials: UsernamePasswordInput,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    if (credentials.username.length <= 2) {
-      return {
-        errors: [
-          {
-            field: 'username',
-            message: 'username length must be greater than 2 characters',
-          },
-        ],
-      };
-    }
-
-    if (credentials.password.length <= 3) {
-      return {
-        errors: [
-          {
-            field: 'password',
-            message: 'password length must be greater than 3 characters',
-          },
-        ],
-      };
-    }
-
     const hashedPassword = await argon2.hash(credentials.password);
     const user = em.create(User, {
       username: credentials.username,
       password: hashedPassword,
+      email: credentials.email,
     });
+
+    const errors = validateRegister(credentials);
+    if (errors) return { errors };
+
     try {
       await em.persistAndFlush(user);
     } catch (err) {
@@ -104,12 +88,18 @@ export class UserResolver {
 
   @Mutation(() => UserResponse)
   async login(
-    @Arg('credentials') credentials: UsernamePasswordInput,
+    @Arg('usernameOrEmail') usernameOrEmail: string,
+    @Arg('password') password: string,
     @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
-    const user = await em.findOne(User, {
-      username: credentials.username,
-    });
+    const user = await em.findOne(
+      User,
+      usernameOrEmail.includes('a')
+        ? {
+            username: usernameOrEmail,
+          }
+        : { email: usernameOrEmail }
+    );
 
     const credentialsErrorMsg = [
       { field: 'username', message: 'username or password is incorrect' },
@@ -120,7 +110,7 @@ export class UserResolver {
       };
     }
 
-    const valid = await argon2.verify(user.password, credentials.password);
+    const valid = await argon2.verify(user.password, password);
     if (!valid) {
       return {
         errors: credentialsErrorMsg,
