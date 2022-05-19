@@ -4,6 +4,7 @@ export async function sendEmail(
   from: string,
   to: string,
   subject: string,
+  text: string,
   html: string
 ) {
   let testAccount = await nodemailer.createTestAccount();
@@ -21,6 +22,7 @@ export async function sendEmail(
     from,
     to,
     subject,
+    text,
     html,
   });
   console.log('Message send: %s', info.messageId);

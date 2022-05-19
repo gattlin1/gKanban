@@ -1,11 +1,5 @@
 mutation Register($credentials: UsernamePasswordInput!) {
   register(credentials: $credentials) {
-    user {
-      ...UserInfo
-    }
-    errors {
-      field
-      message
-    }
+    ...UserResponse
   }
 }

@@ -16,9 +16,9 @@ function Login() {
   return (
     <Wrapper variant='small'>
       <Formik
-        initialValues={{ username: '', password: '' }}
+        initialValues={{ usernameOrEmail: '', password: '' }}
         onSubmit={async (values, { setErrors }) => {
-          const response = await login({ credentials: values });
+          const response = await login(values);
           if (response.data?.login.errors) {
             setErrors(toErrorMap(response.data.login.errors));
           } else if (response.data?.login.user) {
@@ -29,9 +29,9 @@ function Login() {
         {({ isSubmitting }) => (
           <Form>
             <InputField
-              name='username'
-              label='Username'
-              placeholder='Username'
+              name='usernameOrEmail'
+              label='Username or Email'
+              placeholder='Username or Email'
             />
             <Box mt={4}>
               <InputField
@@ -45,11 +45,20 @@ function Login() {
               <Button isLoading={isSubmitting} type='submit' color='teal'>
                 Login
               </Button>
-              <NextLink href='/register'>
-                <Link ml={2} color='teal'>
-                  Don't have an account? Register here
-                </Link>
-              </NextLink>
+              <Box mt={2}>
+                <NextLink href='/forgot-password'>
+                  <Link ml={2} color='teal'>
+                    Forgot Password?
+                  </Link>
+                </NextLink>
+              </Box>
+              <Box>
+                <NextLink href='/register'>
+                  <Link ml={2} color='teal'>
+                    Don't have an account? Register here
+                  </Link>
+                </NextLink>
+              </Box>
             </Box>
           </Form>
         )}

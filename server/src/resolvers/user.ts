@@ -10,9 +10,11 @@ import {
 } from 'type-graphql';
 import { MyContext } from '../types';
 import argon2 from 'argon2';
-import { COOKIE_NAME } from '../constants';
+import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from '../constants';
 import { UsernamePasswordInput } from './UsernamePasswordInput';
 import { validateRegister } from '../utils/validateRegister';
+import { sendEmail } from '../utils/sendEmail';
+import { v4 } from 'uuid';
 
 @ObjectType()
 class FieldError {
@@ -33,12 +35,83 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Mutation(() => UserResponse)
+  async changePassword(
+    @Arg('token') token: string,
+    @Arg('newPassword') newPassword: string,
+    @Ctx() { em, redis, req }: MyContext
+  ): Promise<UserResponse> {
+    if (newPassword.length <= 3) {
+      return {
+        errors: [
+          {
+            field: 'newPassword',
+            message: 'password length must be greater than 3 characters',
+          },
+        ],
+      };
+    }
+
+    token = FORGET_PASSWORD_PREFIX + token;
+    const userId = await redis.get(token);
+    if (!userId) {
+      return {
+        errors: [
+          {
+            field: 'token',
+            message: 'Token Expired',
+          },
+        ],
+      };
+    }
+
+    const user = await em.findOne(User, { id: parseInt(userId) });
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: 'token',
+            message: 'user no longer exist',
+          },
+        ],
+      };
+    }
+
+    user.password = await argon2.hash(newPassword);
+    await em.persistAndFlush(user);
+    redis.del(token);
+
+    // automatically login user
+    req.session.userId = user.id;
+
+    return { user };
+  }
+
   @Mutation(() => Boolean)
   async forgotPassword(
     @Arg('email') email: string,
-    @Ctx() { em, req }: MyContext
+    @Ctx() { em, redis }: MyContext
   ) {
     const user = await em.findOne(User, { email });
+    if (!user) {
+      return true;
+    }
+
+    const token = v4();
+    await redis.set(
+      FORGET_PASSWORD_PREFIX + token,
+      user.id,
+      'EX',
+      1000 * 60 * 60 * 24 * 3
+    );
+    await sendEmail(
+      'Gattlin Walker <gattlin28@gmail.com>',
+      email,
+      'Recover Account',
+      'Click the link below to reset your password. If you did not request a password change please ignore this email.',
+      `<a href="http://localhost:3000/change-password"/${token}>reset password</a>`
+    );
+    return true;
   }
 
   @Query(() => User, { nullable: true })
@@ -94,15 +167,24 @@ export class UserResolver {
   ): Promise<UserResponse> {
     const user = await em.findOne(
       User,
-      usernameOrEmail.includes('a')
+      usernameOrEmail.includes('@')
         ? {
+            email: usernameOrEmail,
+          }
+        : {
             username: usernameOrEmail,
           }
-        : { email: usernameOrEmail }
     );
 
     const credentialsErrorMsg = [
-      { field: 'username', message: 'username or password is incorrect' },
+      {
+        field: 'usernameOrEmail',
+        message: 'login credentials are incorrect',
+      },
+      {
+        field: 'password',
+        message: 'login credentials are incorrect',
+      },
     ];
     if (!user) {
       return {

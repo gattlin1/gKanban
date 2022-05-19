@@ -34,12 +34,7 @@ function Register() {
               placeholder='Username'
             />
             <Box mt={4}>
-              <InputField
-                name='email'
-                label='Email'
-                placeholder='email'
-                type='email'
-              />
+              <InputField name='email' label='Email' placeholder='email' />
             </Box>
             <Box mt={4}>
               <InputField
