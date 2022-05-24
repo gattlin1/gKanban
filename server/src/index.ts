@@ -28,7 +28,7 @@ async function main() {
 
   const app = express();
 
-  const RedisStore = await connectRedis(session);
+  const RedisStore = connectRedis(session);
   const redis = new Redis();
 
   app.use(

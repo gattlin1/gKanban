@@ -207,7 +207,6 @@ export class UserResolver {
         res.clearCookie(COOKIE_NAME);
 
         if (err) {
-          console.log(err);
           resolve(false);
           return;
         }

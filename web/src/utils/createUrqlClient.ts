@@ -8,6 +8,22 @@ import {
   LogoutMutation,
 } from '../generated/graphql';
 import { betterUpdateQuery } from './betterUpdateQuery';
+import { pipe, tap } from 'wonka';
+import { Exchange } from 'urql';
+import router from 'next/router';
+
+const errorExchange: Exchange =
+  ({ forward }) =>
+  (ops$) => {
+    return pipe(
+      forward(ops$),
+      tap(({ error }) => {
+        if (error?.message.includes('not authenticated')) {
+          router.replace('/login');
+        }
+      })
+    );
+  };
 
 export function createUrqlClient(ssrExchange: any) {
   return {
@@ -61,6 +77,7 @@ export function createUrqlClient(ssrExchange: any) {
           },
         },
       }),
+      errorExchange,
       ssrExchange,
       fetchExchange,
     ],
