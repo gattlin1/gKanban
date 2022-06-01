@@ -6,7 +6,8 @@
   "scripts": {
     "watch": "tsc -w",
     "dev": "nodemon dist/index.js",
-    "start": "node dist/index.ts"
+    "start": "node dist/index.ts",
+    "typeorm": "typeorm-ts-node-esm -d ./src/app-data-source.ts"
   },
   "devDependencies": {
     "@types/connect-redis": "^0.0.18",

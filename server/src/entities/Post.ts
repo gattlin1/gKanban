@@ -1,4 +1,4 @@
-import { Field, ObjectType } from 'type-graphql';
+import { ObjectType, Field } from 'type-graphql';
 import {
   BaseEntity,
   Column,

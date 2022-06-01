@@ -4,7 +4,7 @@ import Wrapper, { WrapperVariant } from './Wrapper';
 
 interface LayoutProps {
   variant?: WrapperVariant;
-  children: JSX.Element | JSX.Element[];
+  children: any;
 }
 
 function Layout({ variant = 'regular', children }: LayoutProps) {

@@ -10,21 +10,10 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { MyContext } from './types';
 import cors from 'cors';
-import { DataSource } from 'typeorm';
-import { Post } from './entities/Post';
-import { User } from './entities/User';
+import { AppDataSource } from './app-data-source';
 
 async function main() {
-  const dataSource = new DataSource({
-    type: 'postgres',
-    database: 'lireddit',
-    username: 'gattlinwalker',
-    password: 'gattlinwalker',
-    logging: true,
-    synchronize: true,
-    entities: [User, Post],
-  });
-  await dataSource.initialize();
+  await AppDataSource.initialize();
 
   const app = express();
 
