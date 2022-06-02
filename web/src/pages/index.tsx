@@ -16,7 +16,7 @@ import {
 
 function Index() {
   const [variables, setVariables] = useState({
-    limit: 10,
+    limit: 33,
     cursor: null as null | string,
   });
 
@@ -38,28 +38,31 @@ function Index() {
       </Flex>
       {data && (
         <Stack spacing={8}>
-          {data.posts.map((p) => (
+          {data.posts.posts.map((p) => (
             <Box key={p.id} p={5} shadow='md' borderWidth='1px'>
               <Heading fontSize='xl'>{p.title}</Heading>
               <Text mt={4}>{p.textSnippet}</Text>
             </Box>
           ))}
-          <Flex>
-            <Button
-              onClick={() => {
-                setVariables({
-                  limit: variables.limit,
-                  cursor: data.posts[data.posts.length - 1].createdAt,
-                });
-              }}
-              isLoading={fetching}
-              m='auto'
-              my={8}
-            >
-              Load More
-            </Button>
-          </Flex>
         </Stack>
+      )}
+
+      {data?.posts?.hasMore && (
+        <Flex>
+          <Button
+            onClick={() => {
+              setVariables({
+                limit: variables.limit,
+                cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
+              });
+            }}
+            isLoading={fetching}
+            m='auto'
+            my={8}
+          >
+            Load More
+          </Button>
+        </Flex>
       )}
     </Layout>
   );
