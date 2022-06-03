@@ -6,11 +6,14 @@ import {
   MeDocument,
   RegisterMutation,
   LogoutMutation,
+  VoteMutationVariables,
 } from '../generated/graphql';
 import { betterUpdateQuery } from './betterUpdateQuery';
 import { pipe, tap } from 'wonka';
 import { Exchange } from 'urql';
 import router from 'next/router';
+import gql from 'graphql-tag';
+import { isServer } from './isServer';
 
 const errorExchange: Exchange =
   ({ forward }) =>
@@ -65,7 +68,9 @@ const cursorPagination = (): Resolver => {
   };
 };
 
-export function createUrqlClient(ssrExchange: any) {
+export function createUrqlClient(ssrExchange: any, ctx: any) {
+  let cookie = '';
+  if (isServer()) cookie = ctx.req.headers.cookie;
   return {
     url: 'http://localhost:4000/graphql',
     exchanges: [
@@ -91,6 +96,7 @@ export function createUrqlClient(ssrExchange: any) {
                 }
               );
             },
+
             register: (_result, _, cache, __) => {
               betterUpdateQuery<RegisterMutation, MeQuery>(
                 cache,
@@ -116,6 +122,49 @@ export function createUrqlClient(ssrExchange: any) {
                 () => ({ me: null })
               );
             },
+
+            createPost: (_result, _, cache, __) => {
+              const allFields = cache.inspectFields('Query');
+              const fieldInfos = allFields.filter(
+                (info) => info.fieldName === 'posts'
+              );
+              fieldInfos.forEach((fi) => {
+                cache.invalidate('Query', 'posts', fi.arguments || {});
+              });
+            },
+
+            vote: (_result, args, cache, __) => {
+              const { postId, value } = args as VoteMutationVariables;
+              const data = cache.readFragment(
+                gql`
+                  fragment _ on Post {
+                    id
+                    points
+                    voteStatus
+                  }
+                `,
+                { id: postId } as any
+              );
+
+              if (data) {
+                if (data.voteStatus === args.value) {
+                  return;
+                }
+
+                const newPoints =
+                  (data!.points as number) + (!data.voteStatus ? 1 : 2) * value;
+                console.log(newPoints);
+                cache.writeFragment(
+                  gql`
+                    fragment _ on Post {
+                      points
+                      voteStatus
+                    }
+                  `,
+                  { id: postId, points: newPoints, voteStatus: value }
+                );
+              }
+            },
           },
         },
       }),
@@ -125,6 +174,11 @@ export function createUrqlClient(ssrExchange: any) {
     ],
     fetchOptions: {
       credentials: 'include' as const,
+      headers: cookie
+        ? {
+            cookie,
+          }
+        : undefined,
     },
   };
 }
