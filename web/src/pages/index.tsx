@@ -29,14 +29,6 @@ function Index() {
 
   return (
     <Layout>
-      <Flex mb={4} align='center'>
-        <Heading>LiReddit</Heading>
-        <NextLink href='/create-post'>
-          <Link ml='auto' color='teal'>
-            Create Post
-          </Link>
-        </NextLink>
-      </Flex>
       {data && (
         <Stack spacing={8}>
           {data.posts.posts.map((p) => (
@@ -47,7 +39,11 @@ function Index() {
                 voteStatus={p.voteStatus}
               />
               <Box>
-                <Heading fontSize='xl'>{p.title}</Heading>{' '}
+                <NextLink href='/post/[id]' as={`/post/${p.id}`}>
+                  <Link mr={2}>
+                    <Heading fontSize='xl'>{p.title}</Heading>
+                  </Link>
+                </NextLink>
                 <Text>Posted by: {p.creator.username}</Text>
                 <Text mt={4}>{p.textSnippet}</Text>
               </Box>
