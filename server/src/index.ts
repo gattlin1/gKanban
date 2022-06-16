@@ -12,6 +12,7 @@ import { MyContext } from './types';
 import cors from 'cors';
 import { AppDataSource } from './app-data-source';
 import { createUserLoader } from './utils/createUserLoader';
+import { createUpdootLoader } from './utils/createUpdootLoader';
 
 async function main() {
   await AppDataSource.initialize();
@@ -56,6 +57,7 @@ async function main() {
       res,
       redis,
       userLoader: createUserLoader(),
+      updootLoader: createUpdootLoader(),
     }),
   });
 
