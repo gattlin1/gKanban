@@ -7,6 +7,7 @@ import {
   RegisterMutation,
   LogoutMutation,
   VoteMutationVariables,
+  DeletePostMutationVariables,
 } from '../generated/graphql';
 import { betterUpdateQuery } from './betterUpdateQuery';
 import { pipe, tap } from 'wonka';
@@ -133,6 +134,13 @@ export function createUrqlClient(ssrExchange: any, ctx: any) {
               });
             },
 
+            deletePost: (_result, args, cache, __) => {
+              cache.invalidate({
+                __typename: 'Post',
+                id: (args as DeletePostMutationVariables).id,
+              });
+            },
+
             vote: (_result, args, cache, __) => {
               const { postId, value } = args as VoteMutationVariables;
               const data = cache.readFragment(
@@ -153,7 +161,6 @@ export function createUrqlClient(ssrExchange: any, ctx: any) {
 
                 const newPoints =
                   (data!.points as number) + (!data.voteStatus ? 1 : 2) * value;
-                console.log(newPoints);
                 cache.writeFragment(
                   gql`
                     fragment _ on Post {
