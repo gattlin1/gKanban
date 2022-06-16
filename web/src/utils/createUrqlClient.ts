@@ -1,4 +1,4 @@
-import { cacheExchange, Resolver } from '@urql/exchange-graphcache';
+import { Cache, cacheExchange, Resolver } from '@urql/exchange-graphcache';
 import { dedupExchange, fetchExchange, stringifyVariables } from 'urql';
 import {
   LoginMutation,
@@ -69,6 +69,14 @@ const cursorPagination = (): Resolver => {
   };
 };
 
+function invalidatePosts(cache: Cache) {
+  const allFields = cache.inspectFields('Query');
+  const fieldInfos = allFields.filter((info) => info.fieldName === 'posts');
+  fieldInfos.forEach((fi) => {
+    cache.invalidate('Query', 'posts', fi.arguments || {});
+  });
+}
+
 export function createUrqlClient(ssrExchange: any, ctx: any) {
   let cookie = '';
   if (isServer()) cookie = ctx.req.headers.cookie;
@@ -96,6 +104,7 @@ export function createUrqlClient(ssrExchange: any, ctx: any) {
                   }
                 }
               );
+              invalidatePosts(cache);
             },
 
             register: (_result, _, cache, __) => {
@@ -125,13 +134,7 @@ export function createUrqlClient(ssrExchange: any, ctx: any) {
             },
 
             createPost: (_result, _, cache, __) => {
-              const allFields = cache.inspectFields('Query');
-              const fieldInfos = allFields.filter(
-                (info) => info.fieldName === 'posts'
-              );
-              fieldInfos.forEach((fi) => {
-                cache.invalidate('Query', 'posts', fi.arguments || {});
-              });
+              invalidatePosts(cache);
             },
 
             deletePost: (_result, args, cache, __) => {
