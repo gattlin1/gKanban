@@ -3,9 +3,7 @@ import { DataSource } from 'typeorm';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  database: 'lireddit',
-  username: 'gattlinwalker',
-  password: 'gattlinwalker',
+  url: process.env.DATABASE_URL,
   logging: true,
   synchronize: true,
   entities: [path.join(__dirname, './entities/*')],

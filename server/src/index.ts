@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv-safe/config';
 import { COOKIE_NAME, __prod__ } from './constants';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
@@ -20,11 +21,12 @@ async function main() {
   const app = express();
 
   const RedisStore = connectRedis(session);
-  const redis = new Redis();
+  const redis = new Redis(process.env.REDIS_URL);
+  app.set('trust proxy', 1);
 
   app.use(
     cors({
-      origin: ['http://localhost:3000', 'https://studio.apollographql.com'],
+      origin: process.env.CORS_ORIGIN.split(','),
       credentials: true,
     })
   );
@@ -40,9 +42,10 @@ async function main() {
         httpOnly: true,
         sameSite: 'lax',
         secure: __prod__,
+        //domain: __prod__ ? '' : undefined, // for production purposes fill in string with domain
       },
       saveUninitialized: false,
-      secret: 'adfasldkfjaasdf',
+      secret: process.env.SESSION_SECRET,
       resave: false,
     })
   );
@@ -67,8 +70,8 @@ async function main() {
     cors: false,
   });
 
-  app.listen(4000, () => {
-    console.log('server started on localhost:4000');
+  app.listen(parseInt(process.env.PORT), () => {
+    console.log('server started');
   });
 }
 
