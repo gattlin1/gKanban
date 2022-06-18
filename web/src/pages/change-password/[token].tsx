@@ -6,14 +6,17 @@ import React, { useState } from 'react';
 import InputField from '../../components/InputField';
 import Wrapper from '../../components/Wrapper';
 import { toErrorMap } from '../../utils/toErrorsMap';
-import { useChangePasswordMutation } from '../../generated/graphql';
-import { withUrqlClient } from 'next-urql';
-import { createUrqlClient } from '../../utils/createUrqlClient';
+import {
+  MeDocument,
+  MeQuery,
+  useChangePasswordMutation,
+} from '../../generated/graphql';
 import Modal from '../../components/Modal';
+import { withApollo } from '../../utils/withApollo';
 
 function ChangePassword() {
   const router = useRouter();
-  const [_, changePassword] = useChangePasswordMutation();
+  const [changePassword] = useChangePasswordMutation();
   const [tokenError, setTokenError] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -30,13 +33,26 @@ function ChangePassword() {
               setErrors({ confirmNewPassword: 'passwords do not match' });
               return;
             }
+
             const response = await changePassword({
-              newPassword,
-              token:
-                typeof router.query.token === 'string'
-                  ? router.query.token
-                  : '',
+              variables: {
+                newPassword,
+                token:
+                  typeof router.query.token === 'string'
+                    ? router.query.token
+                    : '',
+              },
+              update: (cache, { data }) => {
+                cache.writeQuery<MeQuery>({
+                  query: MeDocument,
+                  data: {
+                    __typename: 'Query',
+                    me: data?.changePassword.user,
+                  },
+                });
+              },
             });
+
             if (response.data?.changePassword.errors) {
               const errorMap = toErrorMap(response.data.changePassword.errors);
               if ('token' in errorMap) {
@@ -89,4 +105,4 @@ function ChangePassword() {
   );
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: false })(ChangePassword);
+export default withApollo({ ssr: false })(ChangePassword);

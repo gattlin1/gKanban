@@ -9,7 +9,7 @@ interface EditDeletePostButtonsProps {
 }
 
 function EditDeletePostButtons({ id }: EditDeletePostButtonsProps) {
-  const [, deletePost] = useDeletePostMutation();
+  const [deletePost] = useDeletePostMutation();
 
   return (
     <Box mb={1}>
@@ -28,7 +28,12 @@ function EditDeletePostButtons({ id }: EditDeletePostButtonsProps) {
         icon={
           <DeleteIcon
             onClick={() => {
-              deletePost({ id });
+              deletePost({
+                variables: { id },
+                update: (cache) => {
+                  cache.evict({ id: 'Post' + id });
+                },
+              });
             }}
           />
         }

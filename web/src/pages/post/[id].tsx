@@ -1,22 +1,28 @@
 import { Box, Heading, Text } from '@chakra-ui/react';
-import { withUrqlClient } from 'next-urql';
 import React from 'react';
+import EditDeletePostButtons from '../../components/EditDeletePostButtons';
 import Layout from '../../components/Layout';
-import { createUrqlClient } from '../../utils/createUrqlClient';
+import { useMeQuery } from '../../generated/graphql';
 import { useGetPostFromUrl } from '../../utils/useGetPostFromUrl';
+import { withApollo } from '../../utils/withApollo';
 
 function Post() {
-  const [{ data, fetching, error }] = useGetPostFromUrl();
+  const { data, loading, error } = useGetPostFromUrl();
+  const { data: meData } = useMeQuery();
 
   let content = null;
-  if (fetching) {
+  if (loading) {
     content = <div>Loading...</div>;
   }
   if (data) {
+    const id = data.post?.id ? data.post.id : -1;
     content = (
       <Box>
         <Heading mb={4}>{data.post?.title}</Heading>
-        <Text>{data.post?.text}</Text>
+        <Text mb={4}>{data.post?.text}</Text>
+        {meData?.me?.id === data.post?.creator.id && (
+          <EditDeletePostButtons id={id} />
+        )}
       </Box>
     );
   }
@@ -30,4 +36,4 @@ function Post() {
   return <Layout>{content}</Layout>;
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Post);
+export default withApollo({ ssr: true })(Post);

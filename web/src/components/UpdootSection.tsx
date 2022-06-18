@@ -1,7 +1,10 @@
+import { ApolloCache } from '@apollo/client';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { Flex, IconButton } from '@chakra-ui/react';
+import gql from 'graphql-tag';
 import React from 'react';
-import { useVoteMutation } from '../generated/graphql';
+import { useVoteMutation, VoteMutation } from '../generated/graphql';
+import { withApollo } from '../utils/withApollo';
 
 interface UpdootProps {
   postId: number;
@@ -10,7 +13,48 @@ interface UpdootProps {
 }
 
 function UpdootSection({ postId, points, voteStatus }: UpdootProps) {
-  const [, vote] = useVoteMutation();
+  const [vote] = useVoteMutation();
+
+  const updateAfterVote = (
+    value: number,
+    postId: number,
+    cache: ApolloCache<VoteMutation>
+  ) => {
+    const data = cache.readFragment<{
+      id: number;
+      points: number;
+      voteStatus: number | null;
+    }>({
+      id: 'Post:' + postId,
+      fragment: gql`
+        fragment _ on Post {
+          id
+          points
+          voteStatus
+        }
+      `,
+    });
+
+    if (data) {
+      if (data.voteStatus === value) {
+        return;
+      }
+
+      const newPoints =
+        (data!.points as number) + (!data.voteStatus ? 1 : 2) * value;
+      cache.writeFragment({
+        id: 'Post:' + postId,
+        fragment: gql`
+          fragment _ on Post {
+            points
+            voteStatus
+          }
+        `,
+        data: { id: postId, points: newPoints, voteStatus: value },
+      });
+    }
+  };
+
   return (
     <Flex
       flexDirection='column'
@@ -27,7 +71,10 @@ function UpdootSection({ postId, points, voteStatus }: UpdootProps) {
           <ChevronUpIcon
             onClick={() => {
               if (voteStatus !== 1) {
-                vote({ value: 1, postId });
+                vote({
+                  variables: { value: 1, postId },
+                  update: (cache) => updateAfterVote(1, postId, cache),
+                });
               }
             }}
           />
@@ -43,7 +90,10 @@ function UpdootSection({ postId, points, voteStatus }: UpdootProps) {
           <ChevronDownIcon
             onClick={() => {
               if (voteStatus !== -1) {
-                vote({ value: -1, postId });
+                vote({
+                  variables: { value: -1, postId },
+                  update: (cache) => updateAfterVote(-1, postId, cache),
+                });
               }
             }}
           />
@@ -53,4 +103,4 @@ function UpdootSection({ postId, points, voteStatus }: UpdootProps) {
   );
 }
 
-export default UpdootSection;
+export default withApollo({ ssr: false })(UpdootSection);
